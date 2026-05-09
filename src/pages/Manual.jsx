@@ -1,98 +1,110 @@
 import React from 'react';
-import { Smartphone, Tablet, Layout, CheckCircle } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 
 export function Manual() {
   return (
     <div className="content manual-page">
       <div className="manual-header">
-        <h2 style={{ color: '#1B3022', fontWeight: '800', marginBottom: '16px' }}>使い方ガイド</h2>
-        <p className="text-muted" style={{ marginBottom: '24px' }}>
-          アプリの基本的な使い方と、各デバイスでの操作方法を解説します。
+        <h2 style={{ color: '#1B3022', fontWeight: '800', marginBottom: '8px' }}>使い方ガイド</h2>
+        <p className="text-muted" style={{ marginBottom: '32px' }}>
+          アプリの基本的な使い方を画像で確認できます。
         </p>
       </div>
 
-      {/* 1. 朝の目標 */}
-      <div className="guide-section" style={{ marginBottom: '56px' }}>
-        <h3 style={{ borderBottom: '2px solid var(--accent-mint)', paddingBottom: '8px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Smartphone size={20} color="var(--primary-color)" /> 1. 朝の目標を入力する
+      {/* 基本の操作 */}
+      <div className="guide-section" style={{ marginBottom: '48px' }}>
+        <h3 style={{ borderBottom: '2px solid var(--accent-mint)', paddingBottom: '8px', marginBottom: '24px', color: '#1B3022', fontWeight: '700' }}>
+          基本の操作
         </h3>
-        <p className="text-muted text-sm mb-4">
-          ホーム画面でその日の目標を入力します（例：<strong>「自主的に動く」</strong>）。保存すると自動的に「履歴」に記録されます。
-        </p>
-        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-          <div style={{ flex: '1', minWidth: '250px' }}>
-            <p className="text-xs text-muted mb-2">【スマホ画面】</p>
-            <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid #ddd' }}>
-              <img src={`${import.meta.env.BASE_URL}guides/morning_step.png`} alt="スマホ目標入力" style={{ width: '100%', display: 'block' }} />
-            </div>
+
+        <div className="guide-step" style={{ marginBottom: '40px' }}>
+          <h4 style={{ color: '#2E7D32', marginBottom: '12px', fontWeight: '700' }}>1. 朝の目標入力</h4>
+          <p className="text-muted text-sm mb-4">
+            ホーム画面から「目標を入力する」をタップし、その日のゴール（例：「自主的に動く」）を入力して保存します。
+          </p>
+          <div style={{ borderRadius: '24px', overflow: 'hidden', border: '1px solid #e0e0e0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', maxWidth: '340px' }}>
+            <img src={`${import.meta.env.BASE_URL}guides/morning_step.png`} alt="朝の目標入力" style={{ width: '100%', display: 'block' }} />
+          </div>
+        </div>
+
+        <div className="guide-step" style={{ marginBottom: '40px' }}>
+          <h4 style={{ color: '#2E7D32', marginBottom: '12px', fontWeight: '700' }}>2. 夜の振り返り</h4>
+          <p className="text-muted text-sm mb-4">
+            「録音を開始する」から、音声を録音して保存します。
+          </p>
+          <div style={{ borderRadius: '24px', overflow: 'hidden', border: '1px solid #e0e0e0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', maxWidth: '340px' }}>
+            <img src={`${import.meta.env.BASE_URL}guides/night_step.png`} alt="夜の振り返り" style={{ width: '100%', display: 'block' }} />
           </div>
         </div>
       </div>
 
-      {/* 2. 夜の振り返り */}
-      <div className="guide-section" style={{ marginBottom: '56px' }}>
-        <h3 style={{ borderBottom: '2px solid var(--accent-mint)', paddingBottom: '8px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Smartphone size={20} color="var(--primary-color)" /> 2. 夜の振り返りを録音する
+      {/* NotebookLM 連携の手順 */}
+      <div className="guide-section" style={{ marginBottom: '48px' }}>
+        <h3 style={{ borderBottom: '2px solid var(--accent-mint)', paddingBottom: '8px', marginBottom: '24px', color: '#1B3022', fontWeight: '700' }}>
+          NotebookLM 連携の手順
         </h3>
-        <p className="text-muted text-sm mb-4">
-          夜になったら「振り返りを記録する」から音声を録音します。
-        </p>
-        <div style={{ padding: '16px', backgroundColor: '#f0f4f2', borderRadius: '12px', borderLeft: '4px solid var(--accent-mint)' }}>
-          <p className="text-sm" style={{ fontWeight: '600', color: '#2E7D32' }}>💡 ポイント</p>
-          <p className="text-xs text-muted">録音中にそのまま「保存」ボタンを押すと、自動で停止して保存まで完了します。</p>
-        </div>
-      </div>
 
-      {/* 3. デバイスごとの履歴確認 */}
-      <div className="guide-section" style={{ marginBottom: '56px' }}>
-        <h3 style={{ borderBottom: '2px solid var(--accent-mint)', paddingBottom: '8px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Layout size={20} color="var(--primary-color)" /> 3. 履歴の確認とNotebookLM連携
-        </h3>
-        <p className="text-muted text-sm mb-4">
-          「履歴」タブから過去のレポートを確認・活用できます。
-        </p>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-          {/* スマホ */}
-          <div>
-            <p className="text-sm font-bold mb-2" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Smartphone size={16} /> スマホ（iPhone）
-            </p>
-            <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid #ddd' }}>
-              <img src={`${import.meta.env.BASE_URL}guides/history_mobile.png`} alt="スマホ履歴" style={{ width: '100%', display: 'block' }} />
-            </div>
-          </div>
-          
-          {/* iPad */}
-          <div>
-            <p className="text-sm font-bold mb-2" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Tablet size={16} /> iPad / PC
-            </p>
-            <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid #ddd' }}>
-              <img src={`${import.meta.env.BASE_URL}guides/history_ipad.png`} alt="iPad履歴" style={{ width: '100%', display: 'block' }} />
-            </div>
+        <div className="guide-step" style={{ marginBottom: '32px' }}>
+          <h4 style={{ color: '#2E7D32', marginBottom: '8px', fontWeight: '700' }}>4-1. 音声をダウンロードする</h4>
+          <p className="text-muted text-sm mb-4">
+            履歴画面の「音声をダウンロード」ボタンを押し、音声ファイルを端末に保存します。
+          </p>
+          <div style={{ borderRadius: '24px', overflow: 'hidden', border: '1px solid #e0e0e0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', maxWidth: '340px' }}>
+            <img src={`${import.meta.env.BASE_URL}guides/history_card.png`} alt="音声をダウンロード" style={{ width: '100%', display: 'block' }} />
           </div>
         </div>
 
-        <div style={{ marginTop: '24px', padding: '16px', backgroundColor: '#fff9c4', borderRadius: '12px', border: '1px solid #fbc02d' }}>
-          <p className="text-sm font-bold mb-2">NotebookLMへのアップロード方法</p>
-          <ol className="text-xs text-muted" style={{ paddingLeft: '1.2rem', lineHeight: '1.6' }}>
-            <li>履歴の「音声をDL」ボタンで音声を端末に保存</li>
-            <li>「NotebookLM」ボタンを押してサイトを開く（テキストは自動コピー済み）</li>
-            <li>NotebookLM側で「ソースを追加」→「ファイルをアップロード」で音声を選択</li>
-          </ol>
+        <div className="guide-step" style={{ marginBottom: '32px' }}>
+          <h4 style={{ color: '#2E7D32', marginBottom: '8px', fontWeight: '700' }}>4-2. NotebookLM を立ち上げる</h4>
+          <p className="text-muted text-sm mb-4">
+            「NotebookLM」ボタンを押すと、レポート内容がコピーされ、NotebookLMが立ち上がります。
+          </p>
+          <div style={{ borderRadius: '20px', overflow: 'hidden', border: '1px solid #e0e0e0', maxWidth: '280px', marginBottom: '16px' }}>
+            <img src={`${import.meta.env.BASE_URL}guides/notebooklm_icon.png`} alt="NotebookLMボタン" style={{ width: '100%', display: 'block' }} />
+          </div>
+        </div>
+
+        <div className="guide-step" style={{ marginBottom: '32px' }}>
+          <h4 style={{ color: '#2E7D32', marginBottom: '8px', fontWeight: '700' }}>4-3. ソースをアップロードする</h4>
+          <p className="text-muted text-sm mb-16">
+            NotebookLMの画面で、先ほど保存した音声ファイルや、コピーしたテキストをソースとして追加（アップロード）します。これでAIによる振り返り分析が可能です。
+          </p>
+        </div>
+
+        <div style={{ textAlign: 'center', marginTop: '24px' }}>
+          <a 
+            href="https://notebooklm.google.com/" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="btn btn-primary"
+            style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              padding: '16px 40px',
+              backgroundColor: '#FFCC33', // スクリーンショットに近い黄色
+              color: '#1B3022',
+              fontWeight: '800',
+              borderRadius: '30px',
+              textDecoration: 'none',
+              boxShadow: '0 4px 14px rgba(255, 204, 51, 0.4)'
+            }}
+          >
+            NotebookLM を開く <ExternalLink size={20} />
+          </a>
         </div>
       </div>
 
-      {/* FAQ */}
-      <div className="guide-section">
-        <h3 style={{ borderBottom: '2px solid var(--accent-mint)', paddingBottom: '8px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <CheckCircle size={20} color="var(--primary-color)" /> よくある質問
+      {/* よくある質問 */}
+      <div className="guide-section" style={{ marginTop: '64px', marginBottom: '40px' }}>
+        <h3 style={{ borderBottom: '2px solid var(--accent-mint)', paddingBottom: '8px', marginBottom: '24px', color: '#1B3022', fontWeight: '700' }}>
+          よくある質問
         </h3>
         <div className="guide-step">
-          <h4 style={{ color: '#2E7D32', marginBottom: '12px' }}>Q. 日付が変わったらどうなりますか？</h4>
-          <p className="text-muted text-sm" style={{ lineHeight: '1.6' }}>
-            日付が変わると入力画面はリセットされますが、前日までの記録はすべて<strong>「履歴」</strong>タブに保存されています。
+          <h4 style={{ color: '#2E7D32', marginBottom: '12px', fontWeight: '700' }}>Q. 日付が変わったらどうなりますか？</h4>
+          <p className="text-muted text-sm" style={{ lineHeight: '1.8' }}>
+            日付が変わると、入力画面は自動的に新しい日のためにリセットされます。<br />
+            前日までの記録は消えることなく、すべて<strong>「履歴」</strong>タブに保存されますので、安心して毎日記録を続けてください。
           </p>
         </div>
       </div>
