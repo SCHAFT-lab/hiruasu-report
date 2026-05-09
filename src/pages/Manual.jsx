@@ -88,13 +88,6 @@ export function Manual() {
         </h3>
         
         <div className="guide-step">
-          <h4 style={{ color: '#2E7D32', marginBottom: '12px' }}>Q. NotebookLMで音声がエラーになります</h4>
-          <p className="text-muted text-sm" style={{ lineHeight: '1.6' }}>
-            NotebookLMは、ファイル名に日本語が含まれているとエラーが出ることがあります。本アプリではファイル名を自動的に英数字（report_audio...）にしていますが、それでもエラーが出る場合は、<strong>iPhoneのSafari</strong>から録音・ダウンロードし直していただくのが最も確実です。
-          </p>
-        </div>
-        
-        <div className="guide-step">
           <h4 style={{ color: '#2E7D32', marginBottom: '12px' }}>Q. 日付が変わったらどうなりますか？</h4>
           <p className="text-muted text-sm" style={{ lineHeight: '1.6' }}>
             日付が変わると、入力画面は自動的に新しい日のためにリセットされます。<br />
