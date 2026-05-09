@@ -30,8 +30,8 @@ export function History() {
       const url = URL.createObjectURL(log.nightAudio);
       const a = document.createElement('a');
       a.href = url;
-      // 日本語のファイル名だとNotebookLMでエラーになる可能性があるため、英数字に変更
-      const ext = log.nightAudio.type.includes('webm') ? 'm4a' : 'm4a';
+      // NotebookLMに最も確実に読み込ませるため、無圧縮WAV形式として書き出し
+      const ext = 'wav';
       a.download = `report_audio_${log.date}.${ext}`;
       document.body.appendChild(a);
       a.click();
@@ -124,8 +124,7 @@ function AudioPlayer({ blob, date }) {
   if (!url) return null;
 
   // Determine file extension based on mime type
-  const isWebM = blob.type.includes('webm');
-  const extension = isWebM ? 'm4a' : 'm4a'; 
+  const extension = 'wav';
   const filename = `report_audio_${date}.${extension}`;
 
   const handleDownload = () => {
