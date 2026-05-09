@@ -10,6 +10,8 @@ export function NightForm() {
   
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  // 録音完了を待つためのリゾルバ
+  const resolveRecordingRef = useRef(null);
   
   const { saveLog, getTodayLog, isLoaded } = useLogs();
   const navigate = useNavigate();
@@ -32,41 +34,6 @@ export function NightForm() {
     }
   }, [audioBlob]);
 
-  const stopAndGetBlob = () => {
-    return new Promise((resolve) => {
-      if (!mediaRecorderRef.current || mediaRecorderRef.current.state === 'inactive') {
-        resolve(audioBlob);
-        return;
-      }
-
-      mediaRecorderRef.current.onstop = () => {
-        const mimeType = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : 'audio/webm';
-        const blob = new Blob(audioChunksRef.current, { type: mimeType });
-        setAudioBlob(blob);
-        resolve(blob);
-      };
-
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    });
-  };
-
-  const handleSave = async () => {
-    let finalBlob = audioBlob;
-    
-    // 録音中なら停止してデータを取得
-    if (isRecording) {
-      finalBlob = await stopAndGetBlob();
-    }
-    
-    if (finalBlob) {
-      saveLog({ type: 'night', content: '', audioBlob: finalBlob });
-      navigate('/history');
-    } else {
-      alert("録音データが見つかりません。");
-    }
-  };
-
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -82,6 +49,12 @@ export function NightForm() {
       mediaRecorder.onstop = () => {
         const blob = new Blob(audioChunksRef.current, { type: mimeType });
         setAudioBlob(blob);
+        // 保存ボタン待ちの場合、こちらで解除
+        if (resolveRecordingRef.current) {
+          resolveRecordingRef.current(blob);
+          resolveRecordingRef.current = null;
+        }
+        stream.getTracks().forEach(track => track.stop());
       };
 
       mediaRecorder.start();
@@ -95,6 +68,24 @@ export function NightForm() {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+    }
+  };
+
+  const handleSave = async () => {
+    let finalBlob = audioBlob;
+    
+    if (isRecording) {
+      // 録音中の場合は停止させ、onstopでBlobができるのを待つ
+      const waitForBlob = new Promise((resolve) => {
+        resolveRecordingRef.current = resolve;
+        stopRecording();
+      });
+      finalBlob = await waitForBlob;
+    }
+    
+    if (finalBlob) {
+      saveLog({ type: 'night', content: '', audioBlob: finalBlob });
+      navigate('/history');
     }
   };
 
