@@ -12,27 +12,17 @@ export function History() {
     }
   };
 
-  // We need to store ObjectURLs for audio to avoid memory leaks, but keeping it simple
-  // by creating them inline for display. To be perfectly safe, we should manage them.
-  // We'll create a helper component for audio items.
-
   const handleCopy = (log) => {
     const textToCopy = `【日付】${log.date}\n\n【今日の目標】\n${log.morning || '未入力'}\n\n【振り返り】\n${log.night || '（音声記録）'}`;
-    
-    // 1. テキストをコピー（非同期だが、Safari等でもこの直後ならwindow.openが効きやすい）
     navigator.clipboard.writeText(textToCopy);
     setCopiedId(log.id);
 
-    // 2. 音声があればダウンロードを実行
-    // Safari等のスマホブラウザでは非同期処理の中でのダウンロードがブロックされやすいため、
-    // クリックイベントの直後に実行する
     if (log.nightAudio) {
       const url = URL.createObjectURL(log.nightAudio);
       const a = document.createElement('a');
       a.href = url;
-      const isWebM = log.nightAudio.type.includes('webm');
-      const ext = isWebM ? 'webm' : 'm4a';
-      a.download = `report_audio_${log.date}.${ext}`;
+      const ext = log.nightAudio.type.includes('webm') ? 'webm' : 'm4a';
+      a.download = `振り返り音声_${log.date}.${ext}`;
       document.body.appendChild(a);
       a.click();
       setTimeout(() => {
@@ -41,9 +31,6 @@ export function History() {
       }, 100);
     }
 
-    // 3. 少し遅らせてNotebookLMを開く（ポップアップブロックを回避しやすくするため）
-    // alertを出すとwindow.openが確実にブロックされるため、確認は別のアプローチにするか、
-    // そのまま開くのがモバイルでは一般的です。
     const confirmMsg = "NotebookLM用の準備をしました！\n\n・テキスト：コピー済み\n・音声ファイル：保存開始\n\nOKを押すとNotebookLMを開きます。";
     if (window.confirm(confirmMsg)) {
       window.open('https://notebooklm.google.com/', '_blank');
@@ -93,9 +80,7 @@ export function History() {
             
             <div className="history-content mb-0">
               <div className="history-label">振り返り</div>
-              
               {log.nightAudio && <AudioPlayer blob={log.nightAudio} date={log.date} />}
-              
               {log.night ? (
                 <div className="history-text mt-4">{log.night}</div>
               ) : (
@@ -109,7 +94,6 @@ export function History() {
   );
 }
 
-// Separate component to manage ObjectURL lifecycle for Blobs
 function AudioPlayer({ blob, date }) {
   const [url, setUrl] = useState(null);
 
@@ -123,10 +107,8 @@ function AudioPlayer({ blob, date }) {
 
   if (!url) return null;
 
-  // Determine file extension based on mime type
-  const isWebM = blob.type.includes('webm');
-  const extension = isWebM ? 'webm' : 'm4a'; 
-  const filename = `report_audio_${date}.${extension}`;
+  const ext = blob.type.includes('webm') ? 'webm' : 'm4a';
+  const filename = `振り返り音声_${date}.${ext}`;
 
   const handleDownload = () => {
     const a = document.createElement('a');
