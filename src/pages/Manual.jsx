@@ -90,8 +90,7 @@ export function Manual() {
         <div className="guide-step">
           <h4 style={{ color: '#2E7D32', marginBottom: '12px' }}>Q. NotebookLMで音声がエラーになります</h4>
           <p className="text-muted text-sm" style={{ lineHeight: '1.6' }}>
-            NotebookLMは一部の音声形式（WebMなど）に非対応な場合があります。<br />
-            エラーが出る場合は、<strong>iPhoneのSafari</strong>からアプリを使用して録音・ダウンロードしていただくと、対応済みの形式（.m4a）で保存されるため、スムーズに連携できます。
+            NotebookLMは、ファイル名に日本語が含まれているとエラーが出ることがあります。本アプリではファイル名を自動的に英数字（report_audio...）にしていますが、それでもエラーが出る場合は、<strong>iPhoneのSafari</strong>から録音・ダウンロードし直していただくのが最も確実です。
           </p>
         </div>
         
