@@ -3,7 +3,6 @@ import React from 'react';
 export function Manual() {
   return (
     <div className="content manual-page" style={{ backgroundColor: '#fff', minHeight: '100vh', padding: '24px' }}>
-      {/* 使い方ガイド */}
       <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#333', marginBottom: '8px' }}>使い方ガイド</h1>
       <p style={{ fontSize: '16px', color: '#666', marginBottom: '32px' }}>
         アプリの基本的な使い方を画像で確認できます。
@@ -50,8 +49,14 @@ export function Manual() {
         <p style={{ fontSize: '15px', color: '#444', lineHeight: '1.6', marginBottom: '16px' }}>
           履歴画面の「音声をダウンロード」ボタンを押し、音声ファイルを端末に保存します。
         </p>
-        <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #ddd', maxWidth: '340px' }}>
-          <img src={`${import.meta.env.BASE_URL}guides/history_card.png`} alt="音声をダウンロード" style={{ width: '100%', display: 'block' }} />
+        <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #ddd', maxWidth: '340px', marginBottom: '16px' }}>
+          <img src={`${import.meta.env.BASE_URL}guides/download_confirm.png`} alt="ダウンロード確認" style={{ width: '100%', display: 'block' }} />
+        </div>
+        <p style={{ fontSize: '14px', color: '#666', marginBottom: '12px' }}>
+          ※保存された音声は、端末の「ファイル」アプリ内に保存されます。
+        </p>
+        <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #ddd', maxWidth: '180px' }}>
+          <img src={`${import.meta.env.BASE_URL}guides/files_app.png`} alt="ファイルアプリ" style={{ width: '100%', display: 'block' }} />
         </div>
       </div>
 
@@ -62,8 +67,8 @@ export function Manual() {
         <p style={{ fontSize: '15px', color: '#444', lineHeight: '1.6', marginBottom: '16px' }}>
           「NotebookLM」ボタンを押すと、レポート内容がコピーされ、NotebookLMが立ち上がります。
         </p>
-        <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #ddd', maxWidth: '280px' }}>
-          <img src={`${import.meta.env.BASE_URL}guides/notebooklm_icon.png`} alt="NotebookLMボタン" style={{ width: '100%', display: 'block' }} />
+        <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #ddd', maxWidth: '340px' }}>
+          <img src={`${import.meta.env.BASE_URL}guides/notebooklm_new.png`} alt="NotebookLM新規作成" style={{ width: '100%', display: 'block' }} />
         </div>
       </div>
 
