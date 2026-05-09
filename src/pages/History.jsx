@@ -19,31 +19,36 @@ export function History() {
   const handleCopy = (log) => {
     const textToCopy = `【日付】${log.date}\n\n【今日の目標】\n${log.morning || '未入力'}\n\n【振り返り】\n${log.night || '（音声記録）'}`;
     
-    // 1. テキストをコピー
-    navigator.clipboard.writeText(textToCopy).then(() => {
-      setCopiedId(log.id);
-      
-      // 2. 音声があればダウンロードを実行
-      if (log.nightAudio) {
-        const url = URL.createObjectURL(log.nightAudio);
-        const a = document.createElement('a');
-        a.href = url;
-        // 拡張子を特定
-        const ext = log.nightAudio.type.includes('webm') ? 'webm' : 'm4a';
-        a.download = `振り返り音声_${log.date}.${ext}`;
-        document.body.appendChild(a);
-        a.click();
+    // 1. テキストをコピー（非同期だが、Safari等でもこの直後ならwindow.openが効きやすい）
+    navigator.clipboard.writeText(textToCopy);
+    setCopiedId(log.id);
+
+    // 2. 音声があればダウンロードを実行
+    // Safari等のスマホブラウザでは非同期処理の中でのダウンロードがブロックされやすいため、
+    // クリックイベントの直後に実行する
+    if (log.nightAudio) {
+      const url = URL.createObjectURL(log.nightAudio);
+      const a = document.createElement('a');
+      a.href = url;
+      const ext = log.nightAudio.type.includes('webm') ? 'webm' : 'm4a';
+      a.download = `振り返り音声_${log.date}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-      }
+      }, 100);
+    }
 
-      alert("NotebookLM用の準備が整いました！\n\n・テキスト：コピー済み\n・音声ファイル：ダウンロード開始\n\nOKを押すとNotebookLMが開きます。それぞれ追加してください。");
-      
-      // 3. NotebookLMを開く
+    // 3. 少し遅らせてNotebookLMを開く（ポップアップブロックを回避しやすくするため）
+    // alertを出すとwindow.openが確実にブロックされるため、確認は別のアプローチにするか、
+    // そのまま開くのがモバイルでは一般的です。
+    const confirmMsg = "NotebookLM用の準備をしました！\n\n・テキスト：コピー済み\n・音声ファイル：保存開始\n\nOKを押すとNotebookLMを開きます。";
+    if (window.confirm(confirmMsg)) {
       window.open('https://notebooklm.google.com/', '_blank');
-      
-      setTimeout(() => setCopiedId(null), 2000);
-    });
+    }
+    
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   if (!isLoaded) return <div className="content"><p className="text-center">読み込み中...</p></div>;
