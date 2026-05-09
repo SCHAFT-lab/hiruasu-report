@@ -81,6 +81,20 @@ export function Manual() {
           </a>
         </div>
       </div>
+
+      <div className="guide-section" style={{ marginBottom: '40px' }}>
+        <h3 style={{ borderBottom: '2px solid var(--accent-mint)', paddingBottom: '8px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Smartphone size={20} color="var(--primary-color)" /> よくある質問
+        </h3>
+        
+        <div className="guide-step">
+          <h4 style={{ color: '#2E7D32', marginBottom: '12px' }}>Q. 日付が変わったらどうなりますか？</h4>
+          <p className="text-muted text-sm" style={{ lineHeight: '1.6' }}>
+            日付が変わると、入力画面は自動的に新しい日のためにリセットされます。<br />
+            前日までの記録は消えることなく、すべて<strong>「履歴」</strong>タブに保存されますので、安心して毎日記録を続けてください。
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
