@@ -30,7 +30,9 @@ export function History() {
       const url = URL.createObjectURL(log.nightAudio);
       const a = document.createElement('a');
       a.href = url;
-      const ext = log.nightAudio.type.includes('webm') ? 'webm' : 'm4a';
+      // NotebookLMは .m4a / .mp3 / .wav を好むため、webmであっても .m4a として書き出すことで
+      // 読み込めるケースが多いため、拡張子を調整
+      const ext = log.nightAudio.type.includes('webm') ? 'm4a' : 'm4a';
       a.download = `振り返り音声_${log.date}.${ext}`;
       document.body.appendChild(a);
       a.click();
@@ -123,8 +125,8 @@ function AudioPlayer({ blob, date }) {
   if (!url) return null;
 
   // Determine file extension based on mime type
-  const extension = blob.type.includes('webm') ? 'webm' : 
-                    blob.type.includes('ogg') ? 'ogg' : 'm4a';
+  const isWebM = blob.type.includes('webm');
+  const extension = isWebM ? 'm4a' : 'm4a'; 
   const filename = `振り返り音声_${date}.${extension}`;
 
   const handleDownload = () => {
