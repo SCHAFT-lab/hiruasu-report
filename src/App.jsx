@@ -5,6 +5,7 @@ import { Home } from './pages/Home';
 import { MorningForm } from './pages/MorningForm';
 import { NightForm } from './pages/NightForm';
 import { History } from './pages/History';
+import { Manual } from './pages/Manual';
 import { LogProvider } from './context/LogContext';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
               <Route path="/morning" element={<MorningForm />} />
               <Route path="/night" element={<NightForm />} />
               <Route path="/history" element={<History />} />
+              <Route path="/manual" element={<Manual />} />
             </Routes>
           </main>
           <Navigation />
