@@ -8,12 +8,8 @@ export function NightForm() {
   const [audioUrl, setAudioUrl] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   
-  const audioContextRef = useRef(null);
-  const processorRef = useRef(null);
-  const streamRef = useRef(null);
-  const leftChannelRef = useRef([]);
-  const recordingLengthRef = useRef(0);
-  const sampleRateRef = useRef(44100);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   const { saveLog, getTodayLog, isLoaded } = useLogs();
   const navigate = useNavigate();
@@ -36,8 +32,15 @@ export function NightForm() {
     }
   }, [audioBlob]);
 
-  // WAVエンコーダー関数
-  const createWavBlob = (samples, sampleRate) => {
+  // 高互換WAV生成関数 (16kHz / 16bit / Mono)
+  const transcodeToWav = async (originalBlob) => {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    const arrayBuffer = await originalBlob.arrayBuffer();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    
+    const numChannels = 1;
+    const sampleRate = 16000;
+    const samples = audioBuffer.getChannelData(0);
     const buffer = new ArrayBuffer(44 + samples.length * 2);
     const view = new DataView(buffer);
 
@@ -48,15 +51,15 @@ export function NightForm() {
     };
 
     writeString(0, 'RIFF');
-    view.setUint32(4, 32 + samples.length * 2, true);
+    view.setUint32(4, 36 + samples.length * 2, true);
     writeString(8, 'WAVE');
     writeString(12, 'fmt ');
     view.setUint32(16, 16, true);
     view.setUint16(20, 1, true); // PCM
-    view.setUint16(22, 1, true); // Mono
+    view.setUint16(22, numChannels, true);
     view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate * 2, true);
-    view.setUint16(32, 2, true);
+    view.setUint32(28, sampleRate * numChannels * 2, true);
+    view.setUint16(32, numChannels * 2, true);
     view.setUint16(34, 16, true);
     writeString(36, 'data');
     view.setUint32(40, samples.length * 2, true);
@@ -67,58 +70,46 @@ export function NightForm() {
       view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
     }
 
+    audioContext.close();
     return new Blob([view], { type: 'audio/wav' });
   };
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      const audioContext = new AudioContext();
-      audioContextRef.current = audioContext;
-      sampleRateRef.current = audioContext.sampleRate;
+      // ブラウザがサポートする形式で一旦録音
+      const mimeType = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : 'audio/webm';
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
 
-      const source = audioContext.createMediaStreamSource(stream);
-      // Buffer size 4096
-      const processor = audioContext.createScriptProcessor(4096, 1, 1);
-      processorRef.current = processor;
-      
-      leftChannelRef.current = [];
-      recordingLengthRef.current = 0;
-
-      processor.onaudioprocess = (e) => {
-        const left = e.inputBuffer.getChannelData(0);
-        leftChannelRef.current.push(new Float32Array(left));
-        recordingLengthRef.current += 4096;
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
 
-      source.connect(processor);
-      processor.connect(audioContext.destination);
+      mediaRecorder.onstop = async () => {
+        const originalBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        // 保存前に高互換WAVに変換
+        try {
+          const wavBlob = await transcodeToWav(originalBlob);
+          setAudioBlob(wavBlob);
+        } catch (e) {
+          console.error("Transcode error:", e);
+          setAudioBlob(originalBlob); // 失敗時はそのまま
+        }
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
       setIsRecording(true);
     } catch (err) {
-      console.error("Recording error:", err);
       alert("マイクの使用を許可してください。");
     }
   };
 
   const stopRecording = () => {
-    if (processorRef.current) {
-      processorRef.current.disconnect();
-      audioContextRef.current.close();
-      streamRef.current.getTracks().forEach(track => track.stop());
-      
-      // 平坦化
-      const samples = new Float32Array(recordingLengthRef.current);
-      let offset = 0;
-      for (let i = 0; i < leftChannelRef.current.length; i++) {
-        samples.set(leftChannelRef.current[i], offset);
-        offset += leftChannelRef.current[i].length;
-      }
-      
-      const blob = createWavBlob(samples, sampleRateRef.current);
-      setAudioBlob(blob);
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
       setIsRecording(false);
     }
   };
@@ -136,9 +127,9 @@ export function NightForm() {
     <div className="content">
       <div className="form-group recording-block">
         <h4 style={{ marginBottom: '0.8rem', color: '#1B3022', fontSize: '1.2rem', fontWeight: '800', borderLeft: '5px solid var(--accent-mint)', paddingLeft: '12px' }}>
-          🎙️ 音声で記録する (WAV形式)
+          🎙️ 音声で記録する
         </h4>
-        <p className="text-sm text-muted mb-4">NotebookLMに最適化された高互換モードで録音します。</p>
+        <p className="text-sm text-muted mb-4">録音後、自動的にNotebookLM用へ最適化(WAV変換)されます。</p>
         
         {!audioBlob ? (
           <div>
@@ -161,7 +152,7 @@ export function NightForm() {
           </div>
         ) : (
           <div style={{ backgroundColor: 'white', padding: '1rem', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
-            <p className="text-sm text-muted mb-2">録音完了（WAV）</p>
+            <p className="text-sm text-muted mb-2">録音完了（最適化済み）</p>
             <audio src={audioUrl} controls style={{ width: '100%', marginBottom: '1rem' }} />
             <button className="btn btn-outline" onClick={() => setAudioBlob(null)} style={{ color: '#FF5252', borderColor: '#FF5252' }}>
               <Trash2 size={18} />
