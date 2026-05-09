@@ -7,11 +7,11 @@ export function NightForm() {
   const [audioBlob, setAudioBlob] = useState(null);
   const [audioUrl, setAudioUrl] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   
   const mediaRecorderRef = useRef(null);
+  const streamRef = useRef(null);
   const audioChunksRef = useRef([]);
-
+  
   const { saveLog, getTodayLog, isLoaded } = useLogs();
   const navigate = useNavigate();
 
@@ -20,6 +20,7 @@ export function NightForm() {
     const todayLog = getTodayLog();
     if (todayLog && todayLog.nightAudio) {
       setAudioBlob(todayLog.nightAudio);
+      setAudioUrl(URL.createObjectURL(todayLog.nightAudio));
     }
   }, [isLoaded]);
 
@@ -33,69 +34,18 @@ export function NightForm() {
     }
   }, [audioBlob]);
 
-  // 高互換WAV生成関数 (16kHz / 16bit / Mono)
-  const transcodeToWav = async (originalBlob) => {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    const audioContext = new AudioContext();
-    
-    try {
-      const arrayBuffer = await originalBlob.arrayBuffer();
-      // decodeAudioDataをPromise化（古いSafari対応）
-      const audioBuffer = await new Promise((resolve, reject) => {
-        audioContext.decodeAudioData(arrayBuffer, resolve, reject);
-      });
-      
-      const numChannels = 1;
-      const targetSampleRate = 16000;
-      
-      // オフラインコンテキストを使ってリサンプリング
-      const OfflineContext = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-      const offlineCtx = new OfflineContext(numChannels, audioBuffer.duration * targetSampleRate, targetSampleRate);
-      const source = offlineCtx.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(offlineCtx.destination);
-      source.start();
-      const renderedBuffer = await offlineCtx.startRendering();
-      
-      const samples = renderedBuffer.getChannelData(0);
-      const buffer = new ArrayBuffer(44 + samples.length * 2);
-      const view = new DataView(buffer);
-
-      const writeString = (offset, string) => {
-        for (let i = 0; i < string.length; i++) {
-          view.setUint8(offset + i, string.charCodeAt(i));
-        }
-      };
-
-      writeString(0, 'RIFF');
-      view.setUint32(4, 36 + samples.length * 2, true);
-      writeString(8, 'WAVE');
-      writeString(12, 'fmt ');
-      view.setUint32(16, 16, true);
-      view.setUint16(20, 1, true); // PCM
-      view.setUint16(22, numChannels, true);
-      view.setUint32(24, targetSampleRate, true);
-      view.setUint32(28, targetSampleRate * numChannels * 2, true);
-      view.setUint16(32, numChannels * 2, true);
-      view.setUint16(34, 16, true);
-      writeString(36, 'data');
-      view.setUint32(40, samples.length * 2, true);
-
-      let offset = 44;
-      for (let i = 0; i < samples.length; i++, offset += 2) {
-        const s = Math.max(-1, Math.min(1, samples[i]));
-        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-      }
-
-      return new Blob([view], { type: 'audio/wav' });
-    } finally {
-      audioContext.close();
+  const handleSave = () => {
+    if (audioBlob) {
+      saveLog({ type: 'night', content: '', audioBlob });
+      navigate('/history');
     }
   };
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      
       const mimeType = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : 'audio/webm';
       const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
@@ -105,19 +55,9 @@ export function NightForm() {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
 
-      mediaRecorder.onstop = async () => {
-        setIsProcessing(true);
-        const originalBlob = new Blob(audioChunksRef.current, { type: mimeType });
-        try {
-          const wavBlob = await transcodeToWav(originalBlob);
-          setAudioBlob(wavBlob);
-        } catch (e) {
-          console.error("Transcode error:", e);
-          // 失敗しても元のデータを保存できるようにする
-          setAudioBlob(originalBlob);
-        }
-        setIsProcessing(false);
-        stream.getTracks().forEach(track => track.stop());
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: mimeType });
+        setAudioBlob(blob);
       };
 
       mediaRecorder.start();
@@ -131,13 +71,9 @@ export function NightForm() {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-    }
-  };
-
-  const handleSave = () => {
-    if (audioBlob) {
-      saveLog({ type: 'night', content: '', audioBlob });
-      navigate('/history');
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
     }
   };
 
@@ -149,14 +85,14 @@ export function NightForm() {
         <h4 style={{ marginBottom: '0.8rem', color: '#1B3022', fontSize: '1.2rem', fontWeight: '800', borderLeft: '5px solid var(--accent-mint)', paddingLeft: '12px' }}>
           🎙️ 音声で記録する
         </h4>
-        <p className="text-sm text-muted mb-4">録音停止後、NotebookLM用に自動変換されます。</p>
+        <p className="text-sm text-muted mb-4">録音して保存ボタンを押すと、履歴に保存されます。</p>
         
         {!audioBlob ? (
           <div>
             {!isRecording ? (
-              <button className="btn btn-primary" onClick={startRecording} disabled={isProcessing}>
+              <button className="btn btn-primary" onClick={startRecording}>
                 <Mic size={24} />
-                {isProcessing ? '処理中...' : '録音を開始する'}
+                録音を開始する
               </button>
             ) : (
               <div style={{ textAlign: 'center', backgroundColor: 'white', padding: '1rem', borderRadius: '16px', border: '2px solid var(--accent-mint)' }}>
@@ -172,7 +108,7 @@ export function NightForm() {
           </div>
         ) : (
           <div style={{ backgroundColor: 'white', padding: '1rem', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
-            <p className="text-sm text-muted mb-2">録音完了（最適化済み）</p>
+            <p className="text-sm text-muted mb-2">録音完了</p>
             <audio src={audioUrl} controls style={{ width: '100%', marginBottom: '1rem' }} />
             <button className="btn btn-outline" onClick={() => setAudioBlob(null)} style={{ color: '#FF5252', borderColor: '#FF5252' }}>
               <Trash2 size={18} />
@@ -198,9 +134,9 @@ export function NightForm() {
         </ul>
       </div>
 
-      <button className="btn btn-primary" onClick={handleSave} disabled={!audioBlob || isRecording || isProcessing}>
+      <button className="btn btn-primary" onClick={handleSave} disabled={!audioBlob || isRecording}>
         <Save size={20} />
-        {isProcessing ? '変換中...' : '振り返りを保存する'}
+        振り返りを保存する
       </button>
     </div>
   );
