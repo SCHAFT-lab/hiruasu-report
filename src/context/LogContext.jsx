@@ -38,10 +38,11 @@ export function LogProvider({ children }) {
 
       if (existingLogIndex >= 0) {
         updatedLogs = [...prevLogs];
+        const existing = updatedLogs[existingLogIndex];
         updatedLogs[existingLogIndex] = {
-          ...updatedLogs[existingLogIndex],
+          ...existing,
           [newLog.type]: newLog.content,
-          [`${newLog.type}Audio`]: newLog.audioBlob !== undefined ? newLog.audioBlob : updatedLogs[existingLogIndex][`${newLog.type}Audio`],
+          [`${newLog.type}Audio`]: newLog.audioBlob !== undefined ? newLog.audioBlob : existing[`${newLog.type}Audio`],
           updatedAt: new Date().toISOString()
         };
       } else {

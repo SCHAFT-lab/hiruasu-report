@@ -1,17 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, Mic, Square, Trash2 } from 'lucide-react';
+import { Save, Mic, Square, Trash2, MicOff } from 'lucide-react';
 import { useLogs } from '../hooks/useLogs';
 
 export function NightForm() {
   const [audioBlob, setAudioBlob] = useState(null);
   const [audioUrl, setAudioUrl] = useState(null);
-  const [isRecording, setIsRecording] = useState(false);
   
+  const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef(null);
+  const streamRef = useRef(null);
   const audioChunksRef = useRef([]);
-  // 録音完了を待つためのリゾルバ
-  const resolveRecordingRef = useRef(null);
   
   const { saveLog, getTodayLog, isLoaded } = useLogs();
   const navigate = useNavigate();
@@ -21,6 +20,7 @@ export function NightForm() {
     const todayLog = getTodayLog();
     if (todayLog && todayLog.nightAudio) {
       setAudioBlob(todayLog.nightAudio);
+      setAudioUrl(URL.createObjectURL(todayLog.nightAudio));
     }
   }, [isLoaded]);
 
@@ -34,32 +34,73 @@ export function NightForm() {
     }
   }, [audioBlob]);
 
+  const stopAndGetBlob = () => {
+    return new Promise((resolve) => {
+      if (!mediaRecorderRef.current || mediaRecorderRef.current.state === 'inactive') {
+        resolve(audioBlob);
+        return;
+      }
+
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: mediaRecorderRef.current.mimeType });
+        setAudioBlob(blob);
+        
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
+        
+        resolve(blob);
+      };
+
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    });
+  };
+
+  const handleSave = async () => {
+    let finalBlob = audioBlob;
+    
+    if (isRecording) {
+      finalBlob = await stopAndGetBlob();
+    }
+    
+    if (finalBlob && finalBlob.size > 0) {
+      saveLog({ type: 'night', content: '', audioBlob: finalBlob });
+      navigate('/history');
+    } else {
+      alert("録音データが正しく取得できませんでした。もう一度録音し直してください。");
+    }
+  };
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : 'audio/webm';
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      
+      const mimeTypes = ['audio/mp4', 'audio/webm', 'audio/ogg', 'audio/wav'];
+      const supportedMimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
+      
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: supportedMimeType });
       mediaRecorderRef.current = mediaRecorder;
+      streamRef.current = stream;
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+        if (e.data && e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: mimeType });
+        const blob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
         setAudioBlob(blob);
-        // 保存ボタン待ちの場合、こちらで解除
-        if (resolveRecordingRef.current) {
-          resolveRecordingRef.current(blob);
-          resolveRecordingRef.current = null;
-        }
         stream.getTracks().forEach(track => track.stop());
       };
 
-      mediaRecorder.start();
+      mediaRecorder.start(100); 
       setIsRecording(true);
     } catch (err) {
+      console.error("Error accessing microphone:", err);
       alert("マイクの使用を許可してください。");
     }
   };
@@ -71,33 +112,26 @@ export function NightForm() {
     }
   };
 
-  const handleSave = async () => {
-    let finalBlob = audioBlob;
-    
-    if (isRecording) {
-      // 録音中の場合は停止させ、onstopでBlobができるのを待つ
-      const waitForBlob = new Promise((resolve) => {
-        resolveRecordingRef.current = resolve;
-        stopRecording();
-      });
-      finalBlob = await waitForBlob;
-    }
-    
-    if (finalBlob) {
-      saveLog({ type: 'night', content: '', audioBlob: finalBlob });
-      navigate('/history');
-    }
+  const clearAudio = () => {
+    setAudioBlob(null);
   };
 
   if (!isLoaded) return <div className="content"><p className="text-center">読み込み中...</p></div>;
 
+  const isSavable = isRecording || audioBlob !== null;
+
   return (
     <div className="content">
       <div className="form-group recording-block">
-        <h4 style={{ marginBottom: '0.8rem', color: '#1B3022', fontSize: '1.2rem', fontWeight: '800', borderLeft: '5px solid var(--accent-mint)', paddingLeft: '12px' }}>
-          🎙️ 音声で記録する
-        </h4>
-        <p className="text-sm text-muted mb-4">録音して保存ボタンを押すと、履歴に保存されます。</p>
+        <h4 style={{ 
+          marginBottom: '0.8rem', 
+          color: '#1B3022', 
+          fontSize: '1.2rem', 
+          fontWeight: '800',
+          borderLeft: '5px solid var(--accent-mint)',
+          paddingLeft: '12px'
+        }}>🎙️ 音声で記録する</h4>
+        <p className="text-sm text-muted mb-4">画面を見ながら、この場で直接録音できます。</p>
         
         {!audioBlob ? (
           <div>
@@ -120,11 +154,11 @@ export function NightForm() {
           </div>
         ) : (
           <div style={{ backgroundColor: 'white', padding: '1rem', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
-            <p className="text-sm text-muted mb-2">録音完了</p>
+            <p className="text-sm text-muted mb-2">録音データ（プレビュー）</p>
             <audio src={audioUrl} controls style={{ width: '100%', marginBottom: '1rem' }} />
-            <button className="btn btn-outline" onClick={() => setAudioBlob(null)} style={{ color: '#FF5252', borderColor: '#FF5252' }}>
+            <button className="btn btn-outline" onClick={clearAudio} style={{ color: '#FF5252', borderColor: '#FF5252' }}>
               <Trash2 size={18} />
-              録り直す
+              録り直す / 削除
             </button>
           </div>
         )}
@@ -138,15 +172,15 @@ export function NightForm() {
           <li><span className="guide-num">Q3：</span> 具体的に「できたこと」と「できなかったこと」を、思いつくままに挙げてください。</li>
           <li><span className="guide-num">Q4：</span> 今日、一番「迷いなく動けた」「自分らしく振る舞えた」と感じた瞬間はどこですか？</li>
           <li><span className="guide-num">Q5：</span> その時、周囲はどんな反応をしていましたか？ また、それを見てあなたはどう感じましたか？</li>
-          <li><span className="guide-num">Q6：</span> 実習中、実は「あ、今これやるべきかも」と一瞬頭をよぎったのに、結局動かなかった場面はありますか？</li>
+          <li><span className="guide-num">Q6：</span> 実習中、実は「あ、今これやるべきかも」と一瞬頭をよぎったのに、結局動かなかった（または後回しにした）場面はありますか？</li>
           <li><span className="guide-num">Q7：</span> その時、心のなかで自分に対してどんな「言い訳」をしましたか？</li>
           <li><span className="guide-num">Q8：</span> 今日一番「心が揺れた（モヤっとした、ドキッとした）」感情に名前をつけるなら何ですか？</li>
-          <li><span className="guide-num">Q9：</span> その感情は、これまでの人生や過去の実習でも似たような経験がありましたか？</li>
+          <li><span className="guide-num">Q9：</span> その感情や「ついつい避けてしまうパターン」は、これまでの人生や過去の実習でも似たような経験がありましたか？</li>
           <li><span className="guide-num">Q10：</span> 以上の振り返りを踏まえて、明日の自分に「これだけは意識して」とアドバイスを送るなら何と言いますか？</li>
         </ul>
       </div>
 
-      <button className="btn btn-primary" onClick={handleSave} disabled={!audioBlob && !isRecording}>
+      <button className="btn btn-primary" onClick={handleSave} disabled={!isSavable}>
         <Save size={20} />
         振り返りを保存する
       </button>
