@@ -32,10 +32,38 @@ export function NightForm() {
     }
   }, [audioBlob]);
 
-  const handleSave = () => {
-    if (audioBlob) {
-      saveLog({ type: 'night', content: '', audioBlob });
+  const stopAndGetBlob = () => {
+    return new Promise((resolve) => {
+      if (!mediaRecorderRef.current || mediaRecorderRef.current.state === 'inactive') {
+        resolve(audioBlob);
+        return;
+      }
+
+      mediaRecorderRef.current.onstop = () => {
+        const mimeType = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : 'audio/webm';
+        const blob = new Blob(audioChunksRef.current, { type: mimeType });
+        setAudioBlob(blob);
+        resolve(blob);
+      };
+
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    });
+  };
+
+  const handleSave = async () => {
+    let finalBlob = audioBlob;
+    
+    // 録音中なら停止してデータを取得
+    if (isRecording) {
+      finalBlob = await stopAndGetBlob();
+    }
+    
+    if (finalBlob) {
+      saveLog({ type: 'night', content: '', audioBlob: finalBlob });
       navigate('/history');
+    } else {
+      alert("録音データが見つかりません。");
     }
   };
 
@@ -127,7 +155,7 @@ export function NightForm() {
         </ul>
       </div>
 
-      <button className="btn btn-primary" onClick={handleSave} disabled={!audioBlob || isRecording}>
+      <button className="btn btn-primary" onClick={handleSave} disabled={!audioBlob && !isRecording}>
         <Save size={20} />
         振り返りを保存する
       </button>
